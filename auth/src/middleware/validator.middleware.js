@@ -33,9 +33,13 @@ const registerUserValidator = [
         .notEmpty()
         .withMessage('Last name is required'),
 
+    body('role')
+        .optional()
+        .isIn(['user', 'seller'])
+        .withMessage('Role must be user or seller'),
+
     validate
 ];
-
 
 const loginUserValidation = [
     body('username')
@@ -54,6 +58,7 @@ const loginUserValidation = [
 
     validate
 ];
+
 const addUserAddressValidator = [
     body('street')
         .isString()
