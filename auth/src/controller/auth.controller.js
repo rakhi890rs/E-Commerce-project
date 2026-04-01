@@ -104,4 +104,17 @@ async function loginUser(req, res) {
     }
 }
 
-module.exports = { registerUser, loginUser };
+async function getCurrentUser(req, res) {
+    try {
+        return res.status(200).json({
+            message: 'current user fetched successfully',
+            user: req.user
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'internal server error'
+        });
+    }
+}
+
+module.exports = { registerUser, loginUser, getCurrentUser };
