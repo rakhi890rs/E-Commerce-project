@@ -54,5 +54,33 @@ const loginUserValidation = [
 
     validate
 ];
+const addUserAddressValidator = [
+    body('street')
+        .isString()
+        .notEmpty()
+        .withMessage('Street is required'),
 
-module.exports = { registerUserValidator, loginUserValidation };
+    body('city')
+        .isString()
+        .notEmpty()
+        .withMessage('City is required'),
+
+    body('state')
+        .isString()
+        .notEmpty()
+        .withMessage('State is required'),
+
+    body('zip')
+        .isString()
+        .notEmpty()
+        .withMessage('Zip is required'),
+
+    body('country')
+        .isString()
+        .notEmpty()
+        .withMessage('Country is required'),
+
+    validate
+];
+
+module.exports = { registerUserValidator, loginUserValidation, addUserAddressValidator };

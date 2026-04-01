@@ -37,7 +37,7 @@ async function registerUser(req, res) {
             { expiresIn: '1d' }
         );
 
-        res.cookie("token", token, {
+        res.cookie('token', token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000,
             secure: false
@@ -84,7 +84,7 @@ async function loginUser(req, res) {
             { expiresIn: '1d' }
         );
 
-        res.cookie("token", token, {
+        res.cookie('token', token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000,
             secure: false
@@ -117,4 +117,75 @@ async function getCurrentUser(req, res) {
     }
 }
 
-module.exports = { registerUser, loginUser, getCurrentUser };
+async function getUserAddress(req, res) {
+    try {
+        return res.status(200).json({
+            message: 'user address fetched successfully',
+            address: req.user.address
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'internal server error'
+        });
+    }
+}
+
+async function addUserAddress(req, res) {
+    try {
+        const { street, city, state, zip, country } = req.body;
+
+        const user = await userModel.findByIdAndUpdate(
+            req.user._id,
+            {
+                $push: {
+                    address: { street, city, state, zip, country }
+                }
+            },
+            { new: true }
+        );
+
+        return res.status(201).json({
+            message: 'user address added successfully',
+            address: user.address
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: 'internal server error'
+        });
+    }
+}
+async function deleteUserAddress(req, res) {
+    try {
+        const { id } = req.params;
+
+        const user = await userModel.findByIdAndUpdate(
+            req.user._id,
+            {
+                $pull: {
+                    address: { _id: id }
+                }
+            },
+            { new: true }
+        );
+
+        return res.status(200).json({
+            message: 'address deleted successfully',
+            address: user.address
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: 'internal server error'
+        });
+    }
+}
+
+module.exports = {
+    registerUser,
+    loginUser,
+    getCurrentUser,
+    getUserAddress,
+    addUserAddress,
+    deleteUserAddress
+};
