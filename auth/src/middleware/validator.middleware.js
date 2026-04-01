@@ -36,4 +36,23 @@ const registerUserValidator = [
     validate
 ];
 
-module.exports = { registerUserValidator };
+
+const loginUserValidation = [
+    body('username')
+        .optional()
+        .isString()
+        .withMessage('Username must be a string'),
+
+    body('email')
+        .optional()
+        .isEmail()
+        .withMessage('Invalid email'),
+
+    body('password')
+        .isLength({ min: 6 })
+        .withMessage('Password must be at least 6 characters'),
+
+    validate
+];
+
+module.exports = { registerUserValidator, loginUserValidation };
