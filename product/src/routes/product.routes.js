@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { createProduct } = require("../controllers/product.controller");
-const upload = require("../middlewares/upload");
-const createAuthMiddleware = require("../middlewares/auth.middleware");
+const { createProduct } = require("../controller/product.controller");
+const upload = require("../middleware/upload");
+const createAuthMiddleware = require("../middleware/auth.middleware");
 const {
   createProductValidator,
   handleValidationErrors
-} = require("../middlewares/product.validator");
+} = require("../middleware/product.validator");
 
 router.post(
   "/",
