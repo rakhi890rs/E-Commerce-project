@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Product = require("../models/product.model");
 const { uploadImage } = require("../services/imageKit.service");
 
@@ -54,7 +55,6 @@ async function createProduct(req, res) {
       message: "Product created successfully",
       product
     });
-
   } catch (err) {
     res.status(500).json({
       message: err.message
@@ -94,6 +94,120 @@ async function getProducts(req, res) {
       message: "Products fetched successfully",
       products
     });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+}
+
+async function getProductById(req, res) {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found"
+      });
+    }
+
+    res.status(200).json({
+      message: "Product fetched successfully",
+      product
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+}
+
+async function updateProduct(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid product id"
+      });
+    }
+
+    const product = await Product.findOne({
+      _id: id,
+      seller: req.user.id
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found"
+      });
+    }
+
+    const { title, description, priceAmount, priceCurrency } = req.body;
+
+    if (title) product.title = title;
+    if (description) product.description = description;
+    if (priceAmount) product.price.amount = Number(priceAmount);
+    if (priceCurrency) product.price.currency = priceCurrency;
+
+    if (req.files && req.files.length > 0) {
+      const uploaded = await Promise.all(
+        req.files.map(file =>
+          uploadImage({
+            buffer: file.buffer,
+            filename: file.originalname
+          })
+        )
+      );
+
+      product.images = uploaded.map(img => ({
+        url: img.url,
+        thumbnail: img.thumbnail,
+        id: img.id
+      }));
+    }
+
+    await product.save();
+
+    res.status(200).json({
+      message: "Product updated successfully",
+      product
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+}
+async function deleteProduct(req, res) {
+  try {
+    const { id } = req.params;
+
+    // check valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid product id"
+      });
+    }
+
+    // find product + check owner
+    const product = await Product.findOne({
+      _id: id,
+      seller: req.user.id
+    });
+
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found"
+      });
+    }
+
+    // delete product
+    await Product.deleteOne({ _id: id });
+
+    res.status(200).json({
+      message: "Product deleted successfully"
+    });
 
   } catch (err) {
     res.status(500).json({
@@ -102,4 +216,10 @@ async function getProducts(req, res) {
   }
 }
 
-module.exports = { createProduct, getProducts };
+module.exports = {
+  createProduct,
+  getProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct
+};
