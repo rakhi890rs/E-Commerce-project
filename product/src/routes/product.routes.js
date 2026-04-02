@@ -6,7 +6,8 @@ const {
   getProducts,
   getProductById,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getProductBySeller
 } = require("../controller/product.controller");
 
 const upload = require("../middleware/upload");
@@ -26,15 +27,27 @@ router.post(
   createProduct
 );
 
-// GET /api/products
+// seller route MUST come before /:id
+router.get(
+  "/seller",
+  createAuthMiddleware(["admin", "seller"]),
+  getProductBySeller
+);
+
+// GET all products
 router.get("/", getProducts);
 
-// GET /api/products/:id
+// GET product by id
 router.get("/:id", getProductById);
 
+// UPDATE
+router.patch(
+  "/:id",
+  createAuthMiddleware(["admin", "seller"]),
+  updateProduct
+);
 
-router.patch("/:id", createAuthMiddleware(["admin", "seller"]), updateProduct);
-
+// DELETE
 router.delete(
   "/:id",
   createAuthMiddleware(["admin", "seller"]),
