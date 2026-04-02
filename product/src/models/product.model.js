@@ -38,16 +38,15 @@ const productSchema = new mongoose.Schema(
           type: String,
           required: true
         },
-        thumbnail: {
-          type: String
-        },
-        id: {
-          type: String
-        }
+        thumbnail: String,
+        id: String
       }
     ]
   },
   { timestamps: true }
 );
+
+
+productSchema.index({ title: "text", description: "text" });
 
 module.exports = mongoose.model("Product", productSchema);

@@ -22,7 +22,7 @@ async function createProduct(req, res) {
       amount: Number(priceAmount),
       currency: priceCurrency
     };
-    // upload images
+
     let images = [];
 
     if (req.files && req.files.length > 0) {
@@ -42,7 +42,6 @@ async function createProduct(req, res) {
       }));
     }
 
-    // create product
     const product = await Product.create({
       title,
       description,
@@ -63,4 +62,44 @@ async function createProduct(req, res) {
   }
 }
 
-module.exports = { createProduct };
+async function getProducts(req, res) {
+  try {
+    const { q, minprice, maxprice, skip = 0, limit = 20 } = req.query;
+
+    const filter = {};
+
+    if (q) {
+      filter.$text = { $search: q };
+    }
+
+    if (minprice) {
+      filter["price.amount"] = {
+        ...filter["price.amount"],
+        $gte: Number(minprice)
+      };
+    }
+
+    if (maxprice) {
+      filter["price.amount"] = {
+        ...filter["price.amount"],
+        $lte: Number(maxprice)
+      };
+    }
+
+    const products = await Product.find(filter)
+      .skip(Number(skip))
+      .limit(Number(limit));
+
+    res.status(200).json({
+      message: "Products fetched successfully",
+      products
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+}
+
+module.exports = { createProduct, getProducts };
