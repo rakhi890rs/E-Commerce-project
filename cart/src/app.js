@@ -1,12 +1,12 @@
 const express = require('express');
-const cartRoutes = require('./routes/cart.routes')
+const cartRoutes = require('./routes/cart.routes');
 const cookieParser = require('cookie-parser');
 
-    
-
 const app = express();
+
 app.use(cookieParser());
 app.use(express.json());
 
-app.use('api/cart', cartRoutes);
+app.use('/api/cart', cartRoutes);
+
 module.exports = app;
