@@ -4,6 +4,7 @@ const axios = require('axios');
 async function createOrder(req, res) {
     try {
         const user = req.user;
+        const { shippingAddress } = req.body;
 
         const token =
             req.cookies?.token ||
@@ -15,25 +16,80 @@ async function createOrder(req, res) {
             });
         }
 
-        // Fetch the user's cart from Cart Service
-        const cartResponse = await axios.get('http://localhost:3002/cart', {
+        if (!shippingAddress) {
+            return res.status(400).json({
+                message: "Shipping address is required"
+            });
+        }
+
+        const cartResponse = await axios.get('http://localhost:3002/api/cart', {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
 
-        console.log(cartResponse.data);
+        const cartItems = cartResponse.data.cart?.items;
 
-        return res.status(200).json({
-            message: "Cart fetched successfully",
-            cart: cartResponse.data
+        if (!cartItems || cartItems.length === 0) {
+            return res.status(400).json({
+                message: "Cart is empty"
+            });
+        }
+
+        const products = await Promise.all(
+            cartItems.map(async (item) => {
+                const productResponse = await axios.get(
+                    `http://localhost:3001/api/products/${item.productId}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                return {
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    product: productResponse.data.product || productResponse.data
+                };
+            })
+        );
+
+        const orderItems = products.map((item) => ({
+            product: item.productId,
+            quantity: item.quantity,
+            price: {
+                amount: item.product.price.amount,
+                currency: item.product.price.currency || "INR"
+            }
+        }));
+
+        const totalAmount = orderItems.reduce((sum, item) => {
+            return sum + item.price.amount * item.quantity;
+        }, 0);
+
+        const order = await orderModel.create({
+            user: user.id,
+            items: orderItems,
+            totalPrice: {
+                amount: totalAmount,
+                currency: "INR"
+            },
+            shippingAddress,
+            status: "pending"
+        });
+
+        return res.status(201).json({
+            message: "Order created successfully",
+            order
         });
 
     } catch (error) {
-        console.error('Error creating order:', error.message);
+        console.error('Error creating order:', error.response?.data || error.message);
 
         return res.status(500).json({
-            message: 'Failed to create order'
+            message: 'Failed to create order',
+            error: error.response?.data || error.message
         });
     }
 }
