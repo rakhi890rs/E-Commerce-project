@@ -94,6 +94,64 @@ async function createOrder(req, res) {
     }
 }
 
+
+async function getMyOrders(req, res) {
+    try {
+        const userId = req.user.id;
+
+        const token =
+            req.cookies?.token ||
+            req.headers?.authorization?.split(" ")[1];
+
+        const orders = await orderModel.find({ user: userId });
+
+        const ordersWithProducts = await Promise.all(
+            orders.map(async (order) => {
+                const updatedItems = await Promise.all(
+                    order.items.map(async (item) => {
+                        try {
+                            const productResponse = await axios.get(
+                                `http://localhost:3001/api/products/${item.product}`,
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`
+                                    }
+                                }
+                            );
+
+                            return {
+                                ...item.toObject(),
+                                product: productResponse.data.product || productResponse.data
+                            };
+                        } catch (error) {
+                            return {
+                                ...item.toObject(),
+                                product: null
+                            };
+                        }
+                    })
+                );
+
+                return {
+                    ...order.toObject(),
+                    items: updatedItems
+                };
+            })
+        );
+
+        return res.status(200).json({
+            orders: ordersWithProducts
+        });
+    } catch (error) {
+        console.error("Error fetching orders:", error.response?.data || error.message);
+
+        return res.status(500).json({
+            message: "Failed to fetch orders",
+            error: error.response?.data || error.message
+        });
+    }
+}
 module.exports = {
-    createOrder
+    createOrder,
+    getMyOrders
 };
