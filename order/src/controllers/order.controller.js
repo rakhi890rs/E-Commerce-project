@@ -288,6 +288,44 @@ async function updateShippingAddress(req, res) {
         });
     }
 }
+async function updateOrderStatus(req, res) {
+    try {
+        const orderId = req.params.id;
+        const { status } = req.body;
+
+        const order = await orderModel.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Order not found"
+            });
+        }
+
+        // Only seller/admin can update
+        if (!["seller", "admin"].includes(req.user.role)) {
+            return res.status(403).json({
+                message: "Forbidden: Only seller can update status"
+            });
+        }
+
+        order.status = status || order.status;
+
+        await order.save();
+
+        return res.status(200).json({
+            message: "Order status updated successfully",
+            order
+        });
+
+    } catch (error) {
+        console.error("Error updating order status:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to update order status",
+            error: error.message
+        });
+    }
+}
 
 
 
@@ -303,6 +341,6 @@ module.exports = {
     getMyOrders,
     getOrderById,
     cancelOrderById,
-    updateShippingAddress
-
+    updateShippingAddress,
+    updateOrderStatus
 };
