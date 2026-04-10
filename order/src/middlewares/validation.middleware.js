@@ -44,6 +44,36 @@ const shippingAddressValidator = [
     validate
 ];
 
+const updateShippingAddressValidator = [
+    body('street')
+        .optional()
+        .isString()
+        .notEmpty()
+        .withMessage('Street must be a non-empty string'),
+    body('city')
+        .optional()
+        .isString()
+        .notEmpty() 
+        .withMessage('City must be a non-empty string'),
+    body('state')
+        .optional()
+        .isString()
+        .notEmpty()
+        .withMessage('State must be a non-empty string'),
+    body('zip')
+        .optional()
+        .isString()
+        .notEmpty()
+        .withMessage('Zip must be a non-empty string'),
+    body('country')
+        .optional()
+        .isString()
+        .notEmpty()
+        .withMessage('Country must be a non-empty string'),
+    validate
+];
+
 module.exports = {
-    shippingAddressValidator
+    shippingAddressValidator,
+    updateShippingAddressValidator
 };
