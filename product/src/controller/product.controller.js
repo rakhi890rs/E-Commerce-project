@@ -8,7 +8,8 @@ async function createProduct(req, res) {
       title,
       description,
       priceAmount,
-      priceCurrency = "INR"
+      priceCurrency = "INR",
+      stock
     } = req.body;
 
     const seller = req.user.id;
@@ -48,7 +49,8 @@ async function createProduct(req, res) {
       description,
       price,
       seller,
-      images
+      images,
+      stock: Number(stock) || 0
     });
 
     res.status(201).json({

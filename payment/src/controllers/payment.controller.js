@@ -1,6 +1,6 @@
-const paymentModel = require('../../models/payment.model');
+const paymentModel = require('../models/payment.model');
 const axios = require('axios');
-
+const { publishToQueue } = require('../borker/borker');
 require('dotenv').config();
 const Razorpay = require('razorpay');
 
@@ -70,17 +70,26 @@ async function verifyPayment(req, res) {
             secret
         );
 
-        if (!isValid) {
-            return res.status(400).json({
-                message: 'Invalid signature'
-            });
-        }
-
         const payment = await paymentModel.findOne({ razorpayOrderId });
 
         if (!payment) {
             return res.status(404).json({
                 message: 'Payment not found'
+            });
+        }
+
+        if (!isValid) {
+            await publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_FAILED", {
+                email: req.user.email,
+                orderId: payment.order,
+                paymentId,
+                amount: payment.price.amount,
+                currency: payment.price.currency,
+                status: "FAILED"
+            });
+
+            return res.status(400).json({
+                message: 'Invalid signature'
             });
         }
 
@@ -90,6 +99,15 @@ async function verifyPayment(req, res) {
 
         await payment.save();
 
+        await publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_COMPLETED", {
+            email: req.user.email,
+            orderId: payment.order,
+            paymentId: payment.paymentId,
+            amount: payment.price.amount,
+            currency: payment.price.currency,
+            status: payment.status
+        });
+
         return res.status(200).json({
             message: 'Payment verified successfully',
             payment
@@ -97,6 +115,7 @@ async function verifyPayment(req, res) {
 
     } catch (err) {
         console.log('ERROR:', err.response?.data || err.message || err);
+
         return res.status(500).json({
             message: 'Internal Server Error'
         });
