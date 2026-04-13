@@ -1,10 +1,9 @@
-
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
-        type: 'OAuth2',
+        type: "OAuth2",
         user: process.env.EMAIL_USER,
         clientId: process.env.CLIENT_ID,
         clientSecret: process.env.CLIENT_SECRET,
@@ -12,36 +11,27 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// Verify the connection configuration
-transporter.verify((error, success) => {
+transporter.verify((error) => {
     if (error) {
-        console.error('Error connecting to email server:', error);
+        console.error("Error connecting to email server:", error);
     } else {
-        console.log('Email server is ready to send messages');
+        console.log("Email server is ready to send messages");
     }
 });
 
-
-// Function to send email
-const sendEmail = async (to, subject, text, html) => {
+const sendEmail = async (to, subject, html) => {
     try {
         const info = await transporter.sendMail({
-            from: `"Your Name" <${process.env.EMAIL_USER}>`, // sender address
-            to, // list of receivers
-            subject, // Subject line
-            text, // plain text body
-            html, // html body
+            from: `"Super Nova" <${process.env.EMAIL_USER}>`,
+            to,
+            subject,
+            html,
         });
 
-        console.log('Message sent: %s', info.messageId);
-        // Optional: Only useful if using ethereal (test) accounts
-        // console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-        
+        console.log("Message sent:", info.messageId);
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error("Error sending email:", error);
     }
 };
-
-sendEmail("rakhisinghhh65@gmail.com", "kkrh", "Test text", "<p>missing u</p>")
 
 module.exports = sendEmail;
