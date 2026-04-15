@@ -1,5 +1,8 @@
 const app = require('./src/app');
 const connectDB = require("./src/db/db")
+const { connect }   = require('./src/borker/borker');
+
+connect();
 
 connectDB();
 app.listen(3003,()=>{

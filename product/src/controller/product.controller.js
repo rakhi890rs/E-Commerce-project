@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Product = require("../models/product.model");
 const { uploadImage } = require("../services/imageKit.service");
+const { publishToQueue } = require("../borker/borker");
 
 async function createProduct(req, res) {
   try {
@@ -52,6 +53,8 @@ async function createProduct(req, res) {
       images,
       stock: Number(stock) || 0
     });
+
+    publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", product);
 
     res.status(201).json({
       message: "Product created successfully",
