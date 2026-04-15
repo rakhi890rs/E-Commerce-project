@@ -10,7 +10,8 @@ async function createProduct(req, res) {
       description,
       priceAmount,
       priceCurrency = "INR",
-      stock
+      stock,
+      category
     } = req.body;
 
     const seller = req.user.id;
@@ -30,7 +31,7 @@ async function createProduct(req, res) {
 
     if (req.files && req.files.length > 0) {
       const uploaded = await Promise.all(
-        req.files.map(file =>
+        req.files.map((file) =>
           uploadImage({
             buffer: file.buffer,
             filename: file.originalname
@@ -38,7 +39,7 @@ async function createProduct(req, res) {
         )
       );
 
-      images = uploaded.map(img => ({
+      images = uploaded.map((img) => ({
         url: img.url,
         thumbnail: img.thumbnail,
         id: img.id
@@ -51,17 +52,24 @@ async function createProduct(req, res) {
       price,
       seller,
       images,
-      stock: Number(stock) || 0
+      stock: Number(stock) || 0,
+      category
     });
 
-    publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", product);
+    await Promise.all([
+      publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", product),
+      publishToQueue("PRODUCT_NOTIFICATION.PRODUCT_CREATED", {
+        ...product.toObject(),
+        email: req.user.email
+      })
+    ]);
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Product created successfully",
       product
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message
     });
   }
@@ -95,12 +103,12 @@ async function getProducts(req, res) {
       .skip(Number(skip))
       .limit(Number(limit));
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Products fetched successfully",
       products
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message
     });
   }
@@ -116,12 +124,12 @@ async function getProductById(req, res) {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Product fetched successfully",
       product
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message
     });
   }
@@ -148,16 +156,18 @@ async function updateProduct(req, res) {
       });
     }
 
-    const { title, description, priceAmount, priceCurrency } = req.body;
+    const { title, description, priceAmount, priceCurrency, stock, category } = req.body;
 
     if (title) product.title = title;
     if (description) product.description = description;
     if (priceAmount) product.price.amount = Number(priceAmount);
     if (priceCurrency) product.price.currency = priceCurrency;
+    if (stock !== undefined) product.stock = Number(stock);
+    if (category) product.category = category;
 
     if (req.files && req.files.length > 0) {
       const uploaded = await Promise.all(
-        req.files.map(file =>
+        req.files.map((file) =>
           uploadImage({
             buffer: file.buffer,
             filename: file.originalname
@@ -165,7 +175,7 @@ async function updateProduct(req, res) {
         )
       );
 
-      product.images = uploaded.map(img => ({
+      product.images = uploaded.map((img) => ({
         url: img.url,
         thumbnail: img.thumbnail,
         id: img.id
@@ -174,28 +184,27 @@ async function updateProduct(req, res) {
 
     await product.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Product updated successfully",
       product
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message
     });
   }
 }
+
 async function deleteProduct(req, res) {
   try {
     const { id } = req.params;
 
-    // check valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         message: "Invalid product id"
       });
     }
 
-    // find product + check owner
     const product = await Product.findOne({
       _id: id,
       seller: req.user.id
@@ -207,15 +216,13 @@ async function deleteProduct(req, res) {
       });
     }
 
-    // delete product
     await Product.deleteOne({ _id: id });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Product deleted successfully"
     });
-
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message
     });
   }
@@ -225,21 +232,22 @@ async function getProductBySeller(req, res) {
   try {
     const products = await Product.find({ seller: req.user.id });
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Seller products fetched successfully",
       products
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message
     });
   }
 }
+
 module.exports = {
   createProduct,
   getProducts,
   getProductById,
   updateProduct,
   deleteProduct,
-   getProductBySeller
+  getProductBySeller
 };
