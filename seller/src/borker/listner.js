@@ -32,13 +32,13 @@ module.exports = function () {
     }
   });
 
-  subscribeToQueue("PAYMENT_SELLER_DASHBOARD.PAYMENT_COMPLETED", async (payment) => {
+  subscribeToQueue("PAYMENT_SELLER_DASHBOARD.PAYMENT_UPDATED", async (payment) => {
     try {
       await paymentModel.findOneAndUpdate(
         { _id: payment._id },
         payment,
       );
-      console.log("Payment completed in seller dashboard:", payment);
+      console.log("Payment updated in seller dashboard:", payment);
     } catch (error) {
       console.error("Error updating payment in seller dashboard:", error.message);
     }
