@@ -3,6 +3,7 @@ const axios = require('axios');
 const { publishToQueue } = require('../borker/borker');
 require('dotenv').config();
 const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
@@ -27,7 +28,7 @@ async function createPayment(req, res) {
         const price = orderResponse.data.order.totalPrice;
 
         const order = await razorpay.orders.create({
-            amount: price.amount,
+            amount: price.amount * 100,
             currency: price.currency
         });
 
@@ -35,11 +36,20 @@ async function createPayment(req, res) {
             order: orderId,
             razorpayOrderId: order.id,
             user: req.user.id,
+            status: 'INITIATED',
             price: {
-                amount: order.amount,
-                currency: order.currency
+                amount: price.amount,
+                currency: price.currency
             }
         });
+
+        await Promise.all([
+            publishToQueue("PAYMENT_SELLER_DASHBOARD.PAYMENT_INITIATED", payment),
+            publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_INITIATED", {
+                ...payment.toObject(),
+                email: req.user.email
+            })
+        ]);
 
         return res.status(201).json({
             message: 'Payment initiated',
@@ -59,16 +69,12 @@ async function verifyPayment(req, res) {
     const secret = process.env.RAZORPAY_KEY_SECRET;
 
     try {
-        const { validatePaymentVerification } = require('razorpay/dist/utils/razorpay-utils');
+        const generatedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(`${razorpayOrderId}|${paymentId}`)
+            .digest('hex');
 
-        const isValid = validatePaymentVerification(
-            {
-                order_id: razorpayOrderId,
-                payment_id: paymentId
-            },
-            signature,
-            secret
-        );
+        const isValid = generatedSignature === signature;
 
         const payment = await paymentModel.findOne({ razorpayOrderId });
 
@@ -99,14 +105,17 @@ async function verifyPayment(req, res) {
 
         await payment.save();
 
-        await publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_COMPLETED", {
-            email: req.user.email,
-            orderId: payment.order,
-            paymentId: payment.paymentId,
-            amount: payment.price.amount,
-            currency: payment.price.currency,
-            status: payment.status
-        });
+        await Promise.all([
+            publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_COMPLETED", {
+                email: req.user.email,
+                orderId: payment.order,
+                paymentId: payment.paymentId,
+                amount: payment.price.amount,
+                currency: payment.price.currency,
+                status: payment.status
+            }),
+            publishToQueue("PAYMENT_SELLER_DASHBOARD.PAYMENT_COMPLETED", payment)
+        ]);
 
         return res.status(200).json({
             message: 'Payment verified successfully',
