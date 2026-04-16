@@ -8,5 +8,9 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/orders', orderRoutes);
+app.get("/",(req,res)=>{
+    res.status(200).json({message:"Order Service is up and running"
+    })
+})
 
 module.exports = app;
