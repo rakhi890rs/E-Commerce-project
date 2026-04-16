@@ -26,7 +26,7 @@ app.get("/", (req, res) => {
 module.exports = app;});
 
 app.get("/", (req, res) => {
-    res.send("Notification service is running");
+    res.status(200).json({ message: "Notification Service is up and running" });
 });
 
 module.exports = app;
