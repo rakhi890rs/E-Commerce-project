@@ -12,6 +12,9 @@ app.get("/",(req,res)=>{
     })
 })
 app.use('/api/seller/dashboard', sellerRoutes);
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'Seller Service is up and running' });
+});
 
 
 module.exports = app;
