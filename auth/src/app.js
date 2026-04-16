@@ -9,4 +9,9 @@ app.use(cookieParser());
 //Routes
 const authRoutes = require('./routes/auth.routes');
 app.use('/api/auth', authRoutes);
+app.get("/",(req,res)=>{
+    res.status(200).json({message:"Auth Service is up and running"
+        
+})
+})
 module.exports = app;
